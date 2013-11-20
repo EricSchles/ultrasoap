@@ -5,16 +5,7 @@ from suds import WebFault
 from suds.client import Client
 from suds.wsse import Security, UsernameToken
 
-import ultratypes as types
-
-RECORD_TYPES = {
-    'A': '1',
-    'CNAME': '5',
-    'MX': '15',
-    'NS': '2',
-    'SOA': '6',
-    'TXT': '16',
-}
+from ultratypes import types
 
 TTL = '86400'
 
@@ -73,7 +64,7 @@ class Record(object):
         self = self.factory.create('ns5:ResourceRecord')
         self._DName = host_name
         self._TTL = TTL
-        self._Type = RECORD_TYPES[record_type]
+        self._Type = types[record_type]
         self._ZoneName = zone_name
 
 
@@ -120,14 +111,14 @@ class UltraDNSClient(object):
                                        transactionID=transaction_id)
 
     @translate_exceptions
-    def get_resource_records_of_zone(self, zone_name, rr_type=types.ALL):
+    def get_resource_records_of_zone(self, zone_name, rr_type=types['ALL']):
         return self.service.getResourceRecordsOfZone(zoneName=zone_name,
                                                      rrType=rr_type)
 
     @translate_exceptions
-    def create_mx_record(self, zone_name, host_name, preference_value, mail_server, transaction_id=''):
+    def create_mx_record(self, zone_name, host_name, priority_value, mail_server, transaction_id=''):
         resource_record = Record(zone_name, host_name, 'MX')
-        resource_record.InfoValues._Info1Value = preference_value
+        resource_record.InfoValues._Info1Value = priority_value
         resource_record.InfoValues._Info2Value = mail_server
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
@@ -167,8 +158,8 @@ class UltraDNSClient(object):
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
-    def remove_all_records(self, zone_name, transaction_id=''):
-        existing_records = [rec for rec in self.get_resource_records_of_zone(zone_name)]
+    def delete_all_records(self, zone_name, rr_type=types['ALL'], transaction_id=''):
+        existing_records = [rec for rec in self.get_resource_records_of_zone(zone_name, rr_type)]
         results = []
         for rec in existing_records:
             gu_id = rec._Guid
@@ -177,6 +168,25 @@ class UltraDNSClient(object):
         return all(results)
 
     @translate_exceptions
-    def remove_record(self, gu_id, transaction_id=''):
+    def delete_record(self, gu_id, transaction_id=''):
         return self.service.deleteResourceRecord(guid=gu_id,
+                                                 trasactionID=transaction_id)
+
+    @translate_exceptions
+    def update_record(self, zone_name, gu_id, rr_type, host_name, ttl, transaction_id='', **infovalues):
+        resource_record = self.factory.create('ns5:ResourceRecord')
+
+        self.Guid = gu_id
+        self.Type = rr_type
+        self.DName = host_name
+        self.TTL = ttl
+
+        str_prefix = 'resource_record.InfoValues._'
+        str_middle = ' = '
+
+        # TODO: Clean up this for loop, so I don't use eval, or ** in the arguments
+        for i in infovalues.keys():
+            eval(str_prefix + i + str_middle + infovalues[i])
+
+        return self.service.updateResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
