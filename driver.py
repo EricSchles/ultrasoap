@@ -15,7 +15,7 @@ def _ensure_dot(domain_name):
     return _strip_dot(domain_name) + '.'
 
 
-def _get_zone_records(record_api, domain_name, rr_type=types.ALL):
+def _get_zone_records(record_api, domain_name, rr_type=types['ALL']):
     domain_name = _ensure_dot(domain_name)
     client = get_neustar()
     try:
@@ -60,13 +60,23 @@ def delete_zone(domain_name):
 
 def get_entries(domain_name):
     domain_name = _ensure_dot(domain_name)
-    records = _get_zone_records(None, domain_name)
+    records = _get_zone_records(None, domain_name)['ResourceRecord']
     records.sort()
-    return [r.record_dict for r in records if r.interesting()]
+    return [r for r in records if r._Type != 6]
 
 
 def change_record(domain_name, record_name, record_type, values):
-    pass
+    domain_name = _ensure_dot(domain_name)
+    client = get_neustar()
+    host_name = domain_name
+    ttl = 21600 # 86400
+
+    if type(record_type) != int:
+        record_type = types[record_type]
+
+    infovalues = {'Info1Value': 'pdns2.ultradns.net.'}
+
+    return client.update_record(domain_name, record_name, record_type, host_name, ttl, infovalues)
 
 
 def main():
@@ -76,7 +86,11 @@ def main():
     #print get_neustar().service.getZoneInfo(zoneName='wwwiketechonlinecom.com.')
     #delete_zone('wwwiketechonlinecom.com')
     #create_zone('wwwiketechonlinecom.com')
-    print get_entries('wwwiketechonlinecom.com')
+    #get_entries('wwwiketechonlinecom.com')
+
+    values = {}
+
+    change_record('wwwwiketechonlinecom.com', '04023DCA1612D5E1', 2, values)
 
 
 if __name__ == '__main__':
