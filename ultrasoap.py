@@ -99,10 +99,10 @@ class DNSRecord(object):
 
     def as_dict(self):
         return {
-            'HostName': self._DName,
-            'TTL': self._TTL,
-            'RecordType': self.get_type(),
-            'ZoneName': self._ZoneName,
+            '_DName': self._DName,
+            '_TTL': self._TTL,
+            '_Type': self._Type,
+            '_ZoneName': self._ZoneName,
             'Interesting': self.interesting()
         }
 
@@ -118,8 +118,9 @@ class MXRecord(DNSRecord):
 
     def as_dict(self):
         base = super(DNSRecord, self).as_dict()
-        base['PriorityValue'] = self.InfoValues._Info1Value
-        base['MailServer'] = self.InfoValues._Info2Value
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        base['InfoValues']['_Info2Value'] = self.InfoValues._Info2Value
         return base
 
 class ARecord(DNSRecord):
@@ -132,7 +133,8 @@ class ARecord(DNSRecord):
 
     def as_dict(self):
         base = super(DNSRecord, self).as_dict()
-        base['IPAddress'] = self.InfoValues._Info1Value
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
         return base
 
 class TXTRecord(DNSRecord):
@@ -145,7 +147,8 @@ class TXTRecord(DNSRecord):
 
     def as_dict(self):
         base = super(DNSRecord, self).as_dict()
-        base['CharStr'] = self.InfoValues._Info1Value
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
         return base
 
 class NSRecord(DNSRecord):
@@ -158,7 +161,8 @@ class NSRecord(DNSRecord):
 
     def as_dict(self):
         base = super(DNSRecord, self).as_dict()
-        base['NameServer'] = self.InfoValues._Info1Value
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
         return base
 
 class SOARecord(DNSRecord):
@@ -183,14 +187,14 @@ class SOARecord(DNSRecord):
 
     def as_dict(self):
         base = super(DNSRecord, self).as_dict()
-        base['HostName'] = self.InfoValues._Info1Value
-        base['ContactName'] = self.InfoValues._Info2Value
-        base['SerialNumber'] = self.InfoValues._Info3Value
-        base['RefreshDuration'] = self.InfoValues._Info4Value
-        base['RetryDuration'] = self.InfoValues._Info5Value
-        base['ExpireLimit'] = self.InfoValues._Info6Value
-        base['MinTTL'] = self.InfoValues._Info7Value
-
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        base['InfoValues']['_Info2Value'] = self.InfoValues._Info2Value
+        base['InfoValues']['_Info3Value'] = self.InfoValues._Info3Value
+        base['InfoValues']['_Info4Value'] = self.InfoValues._Info4Value
+        base['InfoValues']['_Info5Value'] = self.InfoValues._Info5Value
+        base['InfoValues']['_Info6Value'] = self.InfoValues._Info6Value
+        base['InfoValues']['_Info7Value'] = self.InfoValues._Info7Value
         return base
 
     def interesting(self):
