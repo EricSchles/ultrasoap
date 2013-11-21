@@ -60,7 +60,7 @@ def delete_zone(domain_name):
 
 def get_entries(domain_name):
     domain_name = _ensure_dot(domain_name)
-    records = _get_zone_records(None, domain_name)['ResourceRecord']
+    records = _get_zone_records(None, domain_name)
     records.sort()
     return [r for r in records if r._Type != 6]
 
@@ -83,13 +83,13 @@ def main():
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('suds.client').setLevel(logging.DEBUG)
 
-    #print get_neustar().service.getZoneInfo(zoneName='wwwiketechonlinecom.com.')
-    #delete_zone('wwwiketechonlinecom.com')
-    #create_zone('wwwiketechonlinecom.com')
-    #get_entries('wwwiketechonlinecom.com')
+    # print get_neustar().service.getZoneInfo(zoneName='wwwiketechonlinecom.com.')
+    # delete_zone('wwwiketechonlinecom.com')
+    # create_zone('wwwiketechonlinecom.com')
+    # get_entries('wwwiketechonlinecom.com')
 
+    # WIP (ZoidbergWill)
     values = {}
-
     change_record('wwwwiketechonlinecom.com', '04023DCA1612D5E1', 2, values)
 
 
