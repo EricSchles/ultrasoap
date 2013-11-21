@@ -1,0 +1,6 @@
+demands >= 1.0.5, < 2.0.0
+flake8 < 3.0.0
+mock < 2.0.0
+nose < 2.0.0
+unittest2 < 1.0.0
+yoconfig >= 0.1.0, < 0.2.0
