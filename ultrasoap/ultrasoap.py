@@ -177,12 +177,11 @@ class UltraDNSClient(object):
     def update_record(self, zone_name, gu_id, rr_type, host_name, ttl, infovalues, transaction_id=''):
         resource_record = {
             '_DName': host_name,
+            '_Guid': gu_id,
+            '_Type': rr_type,
+            '_TTL': ttl,
             'InfoValues': {}
         }
-
-        resource_record['_Guid'] = gu_id
-        resource_record['_Type'] = rr_type
-        resource_record['_TTL'] = ttl
 
         str_prefix = 'resource_record[\"InfoValues\"][\"_'
         str_middle = '\"] = '
