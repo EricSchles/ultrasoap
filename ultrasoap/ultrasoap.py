@@ -51,8 +51,8 @@ def translate_exceptions(f):
         try:
             return f(*args, **kwargs)
         except WebFault, e:
-            code = e.fault.faultcode
-            description = e.fault.faultstring
+            code = int(e.fault.detail.UltraWSException.errorCode)
+            description = e.fault.detail.UltraWSException.errorDescription
             cls = UDNS_ERRORS.get(code, UDNSException)
             raise cls(code, description)
     return wrapper
