@@ -68,10 +68,6 @@ class UltraDNSClient(object):
         self.client.set_options(wsse=security)
 
     @property
-    def factory(self):
-        return self.client.factory
-
-    @property
     def service(self):
         return self.client.service
 
