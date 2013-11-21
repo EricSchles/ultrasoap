@@ -11,7 +11,7 @@ setup(
         'flake8 < 3.0.0',
         'mock < 2.0.0',
         'nose < 2.0.0',
+        'suds == 0.4',
         'unittest2 < 1.0.0',
-        'yoconfig >= 0.1.0, < 0.2.0'
     ]
 )
