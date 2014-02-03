@@ -9,7 +9,6 @@ from ultratypes import types
 
 TTL = '86400'
 
-
 @contextmanager
 def udns_transaction(client):
     '''
@@ -52,21 +51,154 @@ def translate_exceptions(f):
         try:
             return f(*args, **kwargs)
         except WebFault, e:
-            code = int(e.fault.detail.UltraWSException.errorCode)
-            description = e.fault.detail.UltraWSException.errorDescription
+            code = e.fault.faultcode
+            description = e.fault.faultstring
             cls = UDNS_ERRORS.get(code, UDNSException)
             raise cls(code, description)
     return wrapper
 
-
-class Record(object):
+class DNSRecord(object):
     def __init__(self, zone_name, host_name, record_type):
-        self = self.factory.create('ns5:ResourceRecord')
         self._DName = host_name
         self._TTL = TTL
-        self._Type = types[record_type]
+        if type(record_type) != int:
+            self._Type = types[record_type]
+        else:
+            self._Type = record_type
         self._ZoneName = zone_name
 
+        self.InfoValues = {}
+
+    def as_instance(self):
+        result = Client('http://testapi.ultradns.com/UltraDNS_WS/v01?wsdl').factory.create('ns5:ResourceRecord')
+        result._DName = self._DName
+        result._TTL = self._TTL
+        result._Type = self._Type
+        return result
+
+
+    def parse_record_data(self, rr):
+        raise NotImplementedError()
+
+    def add_record(self):
+        raise NotImplementedError()
+
+    def delete_record(self):
+        raise NotImplementedError()
+
+    def __cmp__(self, other):
+        return cmp(self._Type, other._Type)
+
+    def interesting(self):
+        return True
+
+    def get_type(self):
+        for record_type, record_intger_code in types.iteritems():
+            if record_intger_code == self._Type:
+                return record_type
+
+    def as_dict(self):
+        return {
+            '_DName': self._DName,
+            '_TTL': self._TTL,
+            '_Type': self._Type,
+            '_ZoneName': self._ZoneName,
+            'Interesting': self.interesting()
+        }
+
+class MXRecord(DNSRecord):
+    def __init__(self, zone_name, host_name, priority_value, mail_server):
+        super(DNSRecord, self).__init__(self, zone_name, host_name, 'MX')
+        self.InfoValues._Info1Value = priority_value
+        self.InfoValues._Info2Value = mail_server
+
+    def parse_record_data(self, rr):
+        self.InfoValues._Info1Value = rr.priority
+        self.InfoValues._Info2Value = rr.mailserver.lower()
+
+    def as_dict(self):
+        base = super(DNSRecord, self).as_dict()
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        base['InfoValues']['_Info2Value'] = self.InfoValues._Info2Value
+        return base
+
+class ARecord(DNSRecord):
+    def __init__(self, zone_name, host_name, ip_address_v4):
+        super(DNSRecord, self).__init__(self, zone_name, host_name, 'A')
+        self.InfoValues._Info1Value = ip_address_v4
+
+    def parse_record_data(self, rr):
+        self.InfoValues._Info1Value = rr.address.lower()
+
+    def as_dict(self):
+        base = super(DNSRecord, self).as_dict()
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        return base
+
+class TXTRecord(DNSRecord):
+    def __init__(self, zone_name, host_name, char_str):
+        super(DNSRecord, self).__init__(self, zone_name, host_name, 'TXT')
+        self.InfoValues._Info1Value = char_str
+
+    def parse_record_data(self, rr):
+        self.InfoValues._Info1Value = rr.char_str
+
+    def as_dict(self):
+        base = super(DNSRecord, self).as_dict()
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        return base
+
+class NSRecord(DNSRecord):
+    def __init__(self, zone_name, host_name, name_server):
+        super(DNSRecord, self).__init__(self, zone_name, host_name, 'NS')
+        self.InfoValues._Info1Value = name_server
+
+    def parse_record_data(self, rr):
+        self.InfoValues._Info1Value = rr.name_server
+
+    def as_dict(self):
+        base = super(DNSRecord, self).as_dict()
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        return base
+
+class SOARecord(DNSRecord):
+    def __init__(self, zone_name, host_name, contact_name, serial_number, refresh_duration, retry_duration, expire_limit, min_ttl):
+        super(DNSRecord, self).__init__(self, zone_name, host_name, 'SOA')
+        self.InfoValues._Info1Value = host_name
+        self.InfoValues._Info2Value = contact_name
+        self.InfoValues._Info3Value = serial_number
+        self.InfoValues._Info4Value = refresh_duration
+        self.InfoValues._Info5Value = retry_duration
+        self.InfoValues._Info6Value = expire_limit
+        self.InfoValues._Info7Value = min_ttl
+
+    def parse_record_data(self, rr):
+        self.InfoValues._Info1Value = rr.host_name
+        self.InfoValues._Info2Value = rr.contact_name
+        self.InfoValues._Info3Value = rr.serial_number
+        self.InfoValues._Info4Value = rr.refresh_duration
+        self.InfoValues._Info5Value = rr.retry_duration
+        self.InfoValues._Info6Value = rr.expire_limit
+        self.InfoValues._Info7Value = rr.min_ttl
+
+    def as_dict(self):
+        base = super(DNSRecord, self).as_dict()
+        base['InfoValues'] = {}
+        base['InfoValues']['_Info1Value'] = self.InfoValues._Info1Value
+        base['InfoValues']['_Info2Value'] = self.InfoValues._Info2Value
+        base['InfoValues']['_Info3Value'] = self.InfoValues._Info3Value
+        base['InfoValues']['_Info4Value'] = self.InfoValues._Info4Value
+        base['InfoValues']['_Info5Value'] = self.InfoValues._Info5Value
+        base['InfoValues']['_Info6Value'] = self.InfoValues._Info6Value
+        base['InfoValues']['_Info7Value'] = self.InfoValues._Info7Value
+        return base
+
+    def interesting(self):
+        return False
 
 class UltraDNSClient(object):
     def __init__(self, url, user, password, account_id, timeout=90):
@@ -117,43 +249,32 @@ class UltraDNSClient(object):
 
     @translate_exceptions
     def create_mx_record(self, zone_name, host_name, priority_value, mail_server, transaction_id=''):
-        resource_record = Record(zone_name, host_name, 'MX')
-        resource_record.InfoValues._Info1Value = priority_value
-        resource_record.InfoValues._Info2Value = mail_server
+        resource_record = MXRecord(self, zone_name, host_name, priority_value, mail_server)
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
     def create_a_record(self, zone_name, host_name, ip_address_v4, transaction_id=''):
-        resource_record = Record(zone_name, host_name, 'A')
-        resource_record.InfoValues._Info1Value = ip_address_v4
+        resource_record = ARecord(self, zone_name, host_name, ip_address_v4)
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
     def create_txt_record(self, zone_name, host_name, char_str, transaction_id=''):
-        resource_record = Record(zone_name, host_name, 'TXT')
-        resource_record.InfoValues._Info1Value = char_str
+        resource_record = TXTRecord(self, zone_name, host_name, char_str)
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
     def create_ns_record(self, zone_name, name_server, host_name, preference_value, transaction_id=''):
-        resource_record = Record(zone_name, host_name, 'NS')
+        resource_record = NSRecord(self, zone_name, host_name, name_server)
         resource_record.InfoValues._Info1Value = name_server
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
-    def create_soa_record(self, zone_name, name_server, host_name, serial_number, refresh_duration, retry_duration, expire_limit, min_ttl, transaction_id=''):
-        resource_record = Record(zone_name, host_name, 'SOA')
-        resource_record.InfoValues._Info1Value = name_server
-        resource_record.InfoValues._Info2Value = host_name
-        resource_record.InfoValues._Info3Value = serial_number
-        resource_record.InfoValues._Info4Value = refresh_duration
-        resource_record.InfoValues._Info5Value = retry_duration
-        resource_record.InfoValues._Info6Value = expire_limit
-        resource_record.InfoValues._Info7Value = min_ttl
+    def create_soa_record(self, zone_name, host_name, contact_name, serial_number, refresh_duration, retry_duration, expire_limit, min_ttl, transaction_id=''):
+        resource_record = SOARecord(self, zone_name, host_name, contact_name, serial_number, refresh_duration, retry_duration, expire_limit, min_ttl)
         return self.service.createResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
 
@@ -173,20 +294,21 @@ class UltraDNSClient(object):
                                                  trasactionID=transaction_id)
 
     @translate_exceptions
-    def update_record(self, zone_name, gu_id, rr_type, host_name, ttl, transaction_id='', **infovalues):
-        resource_record = self.factory.create('ns5:ResourceRecord')
+    def update_record(self, zone_name, gu_id, rr_type, host_name, ttl, infovalues, transaction_id=''):
+        resource_record = DNSRecord(zone_name, host_name, rr_type).as_instance()
 
-        self.Guid = gu_id
-        self.Type = rr_type
-        self.DName = host_name
-        self.TTL = ttl
+        resource_record._Guid = gu_id
+        resource_record._Type = rr_type
+        resource_record._TTL = ttl
 
-        str_prefix = 'resource_record.InfoValues._'
-        str_middle = ' = '
+        str_prefix = 'resource_record.InfoValues[\"_'
+        str_middle = '\"] = '
 
         # TODO: Clean up this for loop, so I don't use eval, or ** in the arguments
         for i in infovalues.keys():
-            eval(str_prefix + i + str_middle + infovalues[i])
+            exec(str_prefix + i + str_middle + "\"" + infovalues[i] + "\"")
 
-        return self.service.updateResourceRecord(resourceRecord=resource_record,
+        result = False
+        result = self.service.updateResourceRecord(resourceRecord=resource_record,
                                                  trasactionID=transaction_id)
+        return result
