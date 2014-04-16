@@ -197,7 +197,8 @@ class UltraDNSClient(object):
         str_prefix = 'resource_record[\"InfoValues\"][\"_'
         str_middle = '\"] = '
 
-        # TODO: Clean up this for loop, so I don't use eval, or ** in the arguments
+        # TODO(ZoidbergWill): Clean up this for loop, so I don't use eval
+        # or ** in the arguments
         for i in infovalues.keys():
             exec(str_prefix + i + str_middle + "\"" + infovalues[i] + "\"")
 
