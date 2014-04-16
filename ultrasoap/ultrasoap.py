@@ -9,12 +9,13 @@ from ultratypes import types
 
 TTL = '86400'
 
+
 @contextmanager
 def udns_transaction(client):
-    '''
+    """
     Context manager for UltraDNS transactions. Returns the transaction ID that
     should be passed to UltraDNSClient methods.
-    '''
+    """
     transaction_id = client.start_transaction()
     try:
         yield transaction_id
@@ -28,7 +29,9 @@ UDNS_ERRORS = {}
 
 
 def error_id(id_):
-    '''Register the excption in UDNS_ERRORS'''
+    """
+    Register the excption in UDNS_ERRORS
+    """
     def wrap_exception(cls):
         UDNS_ERRORS[id_] = cls
         return cls
@@ -45,7 +48,9 @@ class ZoneNotFound(UDNSException):
 
 
 def translate_exceptions(f):
-    '''Translate suds WebFaults to UDNSException (or an appropriate subclass)'''
+    """
+    Translate suds WebFaults to UDNSException (or an appropriate subclass)
+    """
     @wraps(f)
     def wrapper(*args, **kwargs):
         try:
@@ -97,8 +102,8 @@ class UltraDNSClient(object):
 
     @translate_exceptions
     def get_resource_records_of_zone(self, zone_name, rr_type=types['ALL']):
-        return self.service.getResourceRecordsOfZone(zoneName=zone_name,
-                                                     rrType=rr_type)['ResourceRecord']
+        return self.service.getResourceRecordsOfZone(
+            zoneName=zone_name, rrType=rr_type)['ResourceRecord']
 
     def create_base_record(self, zone_name, host_name, rr_type, ttl=TTL):
         if type(rr_type) != int:
@@ -114,35 +119,41 @@ class UltraDNSClient(object):
         }
 
     @translate_exceptions
-    def create_mx_record(self, zone_name, host_name, priority_value, mail_server, transaction_id=''):
+    def create_mx_record(self, zone_name, host_name, priority_value,
+                         mail_server, transaction_id=''):
         resource_record = self.create_base_record(zone_name, host_name, 'MX')
         resource_record['InfoValues']['_Info1Value'] = mail_server
-        return self.service.createResourceRecord(resourceRecord=resource_record,
-                                                 trasactionID=transaction_id)
+        return self.service.createResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
 
     @translate_exceptions
-    def create_a_record(self, zone_name, host_name, ip_address_v4, transaction_id=''):
+    def create_a_record(self, zone_name, host_name, ip_address_v4,
+                        transaction_id=''):
         resource_record = self.create_base_record(zone_name, host_name, 'A')
         resource_record['InfoValues']['_Info1Value'] = ip_address_v4
-        return self.service.createResourceRecord(resourceRecord=resource_record,
-                                                 trasactionID=transaction_id)
+        return self.service.createResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
 
     @translate_exceptions
-    def create_txt_record(self, zone_name, host_name, char_str, transaction_id=''):
+    def create_txt_record(self, zone_name, host_name, char_str,
+                          transaction_id=''):
         resource_record = self.create_base_record(zone_name, host_name, 'TXT')
         resource_record['InfoValues']['_Info1Value'] = char_str
-        return self.service.createResourceRecord(resourceRecord=resource_record,
-                                                 trasactionID=transaction_id)
+        return self.service.createResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
 
     @translate_exceptions
-    def create_ns_record(self, zone_name, name_server, host_name, preference_value, transaction_id=''):
+    def create_ns_record(self, zone_name, name_server, host_name,
+                         preference_value, transaction_id=''):
         resource_record = self.create_base_record(zone_name, host_name, 'NS')
         resource_record['InfoValues']['_Info1Value'] = name_server
-        return self.service.createResourceRecord(resourceRecord=resource_record,
-                                                 trasactionID=transaction_id)
+        return self.service.createResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
 
     @translate_exceptions
-    def create_soa_record(self, zone_name, host_name, contact_name, serial_number, refresh_duration, retry_duration, expire_limit, min_ttl, transaction_id=''):
+    def create_soa_record(self, zone_name, host_name, contact_name,
+                          serial_number, refresh_duration, retry_duration,
+                          expire_limit, min_ttl, transaction_id=''):
         resource_record = self.create_base_record(zone_name, host_name, 'SOA')
         resource_record['InfoValues']['_Info1Value'] = host_name
         resource_record['InfoValues']['_Info2Value'] = contact_name
@@ -151,26 +162,29 @@ class UltraDNSClient(object):
         resource_record['InfoValues']['_Info5Value'] = retry_duration
         resource_record['InfoValues']['_Info6Value'] = expire_limit
         resource_record['InfoValues']['_Info7Value'] = min_ttl
-        return self.service.createResourceRecord(resourceRecord=resource_record,
-                                                 trasactionID=transaction_id)
+        return self.service.createResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
 
     @translate_exceptions
-    def delete_all_records(self, zone_name, rr_type=types['ALL'], transaction_id=''):
-        existing_records = [rec for rec in self.get_resource_records_of_zone(zone_name, rr_type)]
+    def delete_all_records(self, zone_name, rr_type=types['ALL'],
+                           transaction_id=''):
+        existing_records = [rec for rec in self.get_resource_records_of_zone(
+            zone_name, rr_type)]
         results = []
         for rec in existing_records:
             gu_id = rec._Guid
-            results.append(self.service.deleteResourceRecord(guid=gu_id,
-                                                             trasactionID=transaction_id))
+            results.append(self.service.deleteResourceRecord(
+                guid=gu_id, transactionID=transaction_id))
         return all(results)
 
     @translate_exceptions
     def delete_record(self, gu_id, transaction_id=''):
         return self.service.deleteResourceRecord(guid=gu_id,
-                                                 trasactionID=transaction_id)
+                                                 transactionID=transaction_id)
 
     @translate_exceptions
-    def update_record(self, zone_name, gu_id, rr_type, host_name, ttl, infovalues, transaction_id=''):
+    def update_record(self, zone_name, gu_id, rr_type, host_name, ttl,
+                      infovalues, transaction_id=''):
         resource_record = {
             '_DName': host_name,
             '_Guid': gu_id,
@@ -187,6 +201,6 @@ class UltraDNSClient(object):
             exec(str_prefix + i + str_middle + "\"" + infovalues[i] + "\"")
 
         result = False
-        result = self.service.updateResourceRecord(resourceRecord=resource_record,
-                                                   trasactionID=transaction_id)
+        result = self.service.updateResourceRecord(
+            resourceRecord=resource_record, transactionID=transaction_id)
         return result
