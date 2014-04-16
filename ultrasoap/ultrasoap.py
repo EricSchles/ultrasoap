@@ -62,6 +62,7 @@ def translate_exceptions(f):
             raise cls(code, description)
     return wrapper
 
+
 class UltraDNSClient(object):
     def __init__(self, url, user, password, account_id, timeout=90):
         self.client = Client(url, timeout=timeout)
